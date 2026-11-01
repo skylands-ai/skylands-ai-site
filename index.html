@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skylands</title>
+<meta name="description" content="Skylands runs, watches, and approves coding agents across your machines, shown as a world of floating islands around a citadel.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Dusk over the world, one theme by choice. The hero is the world itself: islands
+     orbit the citadel and each one, as it comes to the front, says what it is for.
+     Everything below the hero sits quietly on the night sky. */
+  --sky-top:#0A1424; --sky-low:#2A405E; --fog:#1E3049; --surface:#132235; --surface-2:#1A2D42;
+  --ink:#E7EEF4; --muted:#9DB0C2; --line:#2E4459;
+  --accent:#8DA9FF; --beacon:#FFD54A; --spark:#A9E8F5; --claude:#F2995E;
+  --grass:#5E8F4E; --grass-light:#7FB36A; --soil:#7A5A3E; --rock:#6E6256; --rock-dark:#3E3730; --stone:#9AA6B4; --stone-dark:#6F7D8F; --window:#FFE3A3;
+  --display:"Sora",system-ui,sans-serif; --body:"Barlow",system-ui,sans-serif; --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,monospace;
+  --measure:62ch;
+  color-scheme:dark;
+}
+*{ box-sizing:border-box; }
+html{ scroll-behavior:smooth; }
+@media (prefers-reduced-motion:reduce){ html{ scroll-behavior:auto; } }
+body{ margin:0; background:var(--sky-top); color:var(--ink); font-family:var(--body); font-size:17px; line-height:1.55; -webkit-font-smoothing:antialiased; }
+a{ color:var(--accent); }
+h1,h2,h3{ font-family:var(--display); text-wrap:balance; margin:0; letter-spacing:-0.01em; }
+h1{ font-size:clamp(34px,5.4vw,62px); line-height:1.05; font-weight:700; }
+h1 span{ display:block; }
+h2{ font-size:clamp(26px,3.2vw,38px); line-height:1.12; font-weight:700; }
+h3{ font-size:20px; line-height:1.25; font-weight:600; }
+p{ margin:0; }
+code,kbd{ font-family:var(--mono); font-size:0.88em; }
+.wrap{ width:min(1120px, 100% - 32px); margin-inline:auto; }
+:focus-visible{ outline:2px solid var(--beacon); outline-offset:3px; }
+
+/* Header */
+.top{ position:relative; z-index:5; display:flex; align-items:center; gap:18px; padding:18px 0; }
+.brand{ display:inline-flex; align-items:center; gap:10px; color:var(--ink); text-decoration:none; font-family:var(--display); font-weight:700; font-size:20px; letter-spacing:0.01em; }
+.brand svg{ width:28px; height:28px; }
+.top nav{ margin-left:auto; display:flex; gap:22px; flex-wrap:wrap; }
+.top nav a{ color:var(--muted); text-decoration:none; font-weight:500; }
+.top nav a:hover{ color:var(--ink); }
+.top nav a.gh{ display:inline-flex; align-items:center; gap:7px; }
+.top nav a.gh svg{ width:18px; height:18px; }
+
+/* Hero */
+.hero{ position:relative; overflow:hidden; background:linear-gradient(180deg, var(--sky-top) 0%, #14243A 55%, var(--sky-low) 100%); }
+.hero::after{ content:""; position:absolute; inset:auto 0 0 0; height:140px; background:linear-gradient(180deg, transparent, var(--sky-top)); pointer-events:none; }
+.stars{ position:absolute; inset:0; width:100%; height:100%; opacity:0.9; pointer-events:none; }
+.hero-copy{ position:relative; z-index:4; text-align:center; max-width:760px; margin:28px auto 0; padding-inline:16px; }
+.hero-copy p{ color:var(--muted); font-size:clamp(17px,2vw,20px); max-width:var(--measure); margin:16px auto 0; }
+.cta{ display:flex; justify-content:center; gap:12px; flex-wrap:wrap; margin-top:24px; }
+.btn{ display:inline-flex; align-items:center; gap:8px; min-height:44px; padding:0 18px; border-radius:10px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font:inherit; font-weight:600; text-decoration:none; cursor:pointer; }
+.btn:hover{ background:var(--surface-2); }
+.btn.primary{ background:var(--accent); border-color:transparent; color:#0B1526; }
+.btn.primary:hover{ background:#A4BBFF; }
+.btn code{ font-weight:500; }
+
+.scene{ position:relative; z-index:3; height:clamp(400px, 52vw, 600px); margin-top:8px; }
+.scene .citadel{ position:absolute; left:50%; top:46%; width:min(300px, 40vw); transform:translate(-50%,-50%); z-index:50; }
+.scene .citadel svg{ width:100%; height:auto; display:block; overflow:visible; }
+.tethers{ position:absolute; inset:0; width:100%; height:100%; z-index:5; pointer-events:none; overflow:visible; }
+.tethers path{ fill:none; stroke:#6A8FB8; stroke-width:2; stroke-linecap:round; opacity:0.75; }
+.tethers circle{ fill:var(--spark); }
+.isle{ position:absolute; left:0; top:0; width:170px; cursor:pointer; border:none; background:none; padding:0; will-change:transform; }
+.isle svg{ width:100%; height:auto; display:block; overflow:visible; }
+.isle .halo{ opacity:0; transition:opacity 0.6s; }
+.isle.front .halo{ opacity:1; }
+.isle .name{ position:absolute; left:50%; top:100%; transform:translate(-50%, 4px); white-space:nowrap; font-family:var(--display); font-weight:600; font-size:12px; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted); opacity:0; transition:opacity 0.5s; }
+.isle.front .name{ opacity:1; color:var(--beacon); }
+.airship{ position:absolute; left:0; top:0; width:56px; z-index:95; pointer-events:none; }
+.airship svg{ width:100%; height:auto; display:block; overflow:visible; }
+
+.beacon-core{ animation:beacon 2.4s ease-in-out infinite; transform-origin:center; }
+@keyframes beacon{ 0%,100%{ opacity:0.55; } 50%{ opacity:1; } }
+@media (prefers-reduced-motion:reduce){ .beacon-core{ animation:none; opacity:0.9; } }
+
+/* The caption rides beside the front island on wide screens and sits below the scene on narrow ones. */
+.caption{ position:absolute; z-index:120; right:max(16px, 4%); bottom:9%; width:min(400px, 42%); padding:18px 20px 16px; border-radius:14px; background:color-mix(in srgb, var(--surface) 88%, transparent); border:1px solid var(--line); box-shadow:0 20px 50px rgba(0,0,0,0.35); backdrop-filter:blur(8px); }
+.caption .eyebrow{ display:flex; align-items:center; gap:10px; font-family:var(--mono); font-size:12px; color:var(--muted); letter-spacing:0.04em; }
+.caption .eyebrow .dot{ width:9px; height:9px; border-radius:50%; background:var(--beacon); box-shadow:0 0 10px var(--beacon); }
+.caption h2{ font-size:clamp(22px,2.4vw,28px); margin-top:8px; }
+.caption p{ color:var(--muted); margin-top:8px; font-size:16px; }
+.caption .swap{ transition:opacity 0.35s, transform 0.35s; }
+.caption.changing .swap{ opacity:0; transform:translateY(6px); }
+@media (prefers-reduced-motion:reduce){ .caption .swap{ transition:none; } }
+
+.controls{ position:relative; z-index:4; display:flex; align-items:center; justify-content:center; gap:10px; padding:10px 0 34px; }
+.controls .dots{ display:flex; gap:8px; }
+.controls .dots button{ width:30px; height:30px; border-radius:50%; border:none; background:transparent; cursor:pointer; display:grid; place-items:center; padding:0; }
+.controls .dots button span{ width:9px; height:9px; border-radius:50%; background:var(--line); transition:transform 0.3s, background 0.3s; }
+.controls .dots button[aria-current="true"] span{ background:var(--beacon); transform:scale(1.35); }
+.controls .arrow,.controls .pause{ width:36px; height:36px; border-radius:50%; border:1px solid var(--line); background:var(--surface); color:var(--ink); cursor:pointer; display:grid; place-items:center; }
+.controls .arrow:hover,.controls .pause:hover{ background:var(--surface-2); }
+.controls .pause{ margin-left:8px; }
+.controls svg{ width:16px; height:16px; }
+
+@media (max-width:820px){
+  .scene{ height:clamp(360px, 90vw, 480px); }
+  .scene .citadel{ width:min(220px, 44vw); }
+  .isle{ width:130px; }
+  .caption{ position:relative; right:auto; bottom:auto; width:min(560px, 100% - 32px); margin:-10px auto 0; }
+}
+
+/* Sections */
+section.block{ padding:72px 0; border-top:1px solid var(--line); }
+.lead{ color:var(--muted); max-width:var(--measure); margin-top:12px; font-size:18px; }
+.steps{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:18px; margin-top:34px; }
+.step{ padding:20px 20px 18px; border-radius:14px; background:var(--surface); border:1px solid var(--line); display:flex; flex-direction:column; gap:10px; }
+.step .n{ font-family:var(--mono); font-size:12px; color:var(--beacon); letter-spacing:0.06em; }
+.step p{ color:var(--muted); font-size:15.5px; }
+.step pre{ margin:4px 0 0; padding:10px 12px; border-radius:8px; background:var(--sky-top); border:1px solid var(--line); overflow-x:auto; font-family:var(--mono); font-size:12.5px; line-height:1.5; color:var(--spark); }
+.features{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:18px; margin-top:34px; }
+.feature{ padding:18px 20px; border-radius:14px; background:var(--surface); border:1px solid var(--line); }
+.feature svg{ width:34px; height:34px; display:block; margin-bottom:10px; }
+.feature p{ color:var(--muted); font-size:15.5px; margin-top:6px; }
+.roles{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:18px; margin-top:34px; }
+.role{ padding:20px; border-radius:14px; border:1px solid var(--line); background:linear-gradient(180deg, var(--surface), var(--sky-top)); }
+.role .cmd{ display:inline-block; margin-bottom:10px; padding:4px 9px; border-radius:6px; background:var(--sky-top); border:1px solid var(--line); font-family:var(--mono); font-size:12.5px; color:var(--spark); }
+.role p{ color:var(--muted); font-size:15.5px; margin-top:6px; }
+footer{ border-top:1px solid var(--line); padding:28px 0 40px; color:var(--muted); font-size:14px; display:flex; gap:16px 28px; flex-wrap:wrap; align-items:center; }
+footer a{ color:var(--muted); }
+footer .brand{ font-size:16px; }
+@media (max-width:860px){ .steps,.features,.roles{ grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<!-- Shapes used more than once: islands, the citadel, the airship, the feature glyphs. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="rockgrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--rock)"/><stop offset="1" stop-color="var(--rock-dark)"/></linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="var(--beacon)" stop-opacity="0.9"/><stop offset="1" stop-color="var(--beacon)" stop-opacity="0"/></radialGradient>
+    <radialGradient id="halo" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="var(--beacon)" stop-opacity="0.35"/><stop offset="1" stop-color="var(--beacon)" stop-opacity="0"/></radialGradient>
+
+    <!-- An island: grass on soil on rock, a crystal underneath, something on top. -->
+    <symbol id="isle-base" viewBox="0 0 170 160" overflow="visible">
+      <ellipse class="halo" cx="85" cy="70" rx="95" ry="60" fill="url(#halo)"/>
+      <path d="M22 66 Q40 120 85 136 Q130 120 148 66 Z" fill="url(#rockgrad)"/>
+      <path d="M22 66 Q50 80 85 78 Q120 80 148 66 L148 70 Q120 86 85 84 Q50 86 22 70 Z" fill="var(--soil)"/>
+      <ellipse cx="85" cy="64" rx="63" ry="18" fill="var(--grass)"/>
+      <ellipse cx="85" cy="61" rx="56" ry="13" fill="var(--grass-light)" opacity="0.55"/>
+      <path d="M85 136 L79 146 L85 156 L91 146 Z" fill="var(--spark)" opacity="0.9"/>
+    </symbol>
+    <symbol id="isle-trees" viewBox="0 0 170 160" overflow="visible">
+      <use href="#isle-base"/>
+      <g fill="#3F7A3A"><circle cx="55" cy="46" r="9"/><circle cx="68" cy="40" r="11"/><circle cx="118" cy="46" r="9"/></g>
+      <g fill="#4F8F45"><circle cx="62" cy="36" r="8"/><circle cx="110" cy="38" r="9"/></g>
+      <g stroke="#6B4A30" stroke-width="3"><path d="M62 44v18"/><path d="M114 46v16"/></g>
+    </symbol>
+    <symbol id="isle-terrace" viewBox="0 0 170 160" overflow="visible">
+      <use href="#isle-base"/>
+      <g fill="#E2DCCB" stroke="#4A4238" stroke-width="1">
+        <rect x="52" y="30" width="16" height="30"/><rect x="72" y="22" width="14" height="38"/><rect x="90" y="36" width="18" height="24"/><rect x="112" y="28" width="12" height="32"/>
+      </g>
+      <g fill="#F4E7C2"><rect x="72" y="22" width="14" height="38" opacity="0.9"/></g>
+      <g fill="#DCE8F4"><rect x="90" y="36" width="18" height="24" opacity="0.9"/></g>
+    </symbol>
+    <symbol id="isle-pond" viewBox="0 0 170 160" overflow="visible">
+      <use href="#isle-base"/>
+      <ellipse cx="80" cy="58" rx="22" ry="8" fill="#5FA9D6"/>
+      <ellipse cx="80" cy="57" rx="18" ry="5" fill="#9FD3F5" opacity="0.7"/>
+      <g fill="#3F7A3A"><circle cx="120" cy="44" r="9"/><circle cx="40" cy="50" r="7"/></g>
+      <g stroke="#6B4A30" stroke-width="3"><path d="M120 50v12"/><path d="M40 56v8"/></g>
+    </symbol>
+
+    <!-- The citadel: a broad island, a keep with towers, the beacon on top. -->
+    <symbol id="citadel" viewBox="0 0 300 300" overflow="visible">
+      <circle cx="150" cy="54" r="46" fill="url(#glow)"/>
+      <path d="M38 170 Q70 250 150 274 Q230 250 262 170 Z" fill="url(#rockgrad)"/>
+      <path d="M38 170 Q90 190 150 188 Q210 190 262 170 L262 176 Q210 198 150 196 Q90 198 38 176 Z" fill="var(--soil)"/>
+      <ellipse cx="150" cy="166" rx="112" ry="30" fill="var(--grass)"/>
+      <ellipse cx="150" cy="162" rx="100" ry="22" fill="var(--grass-light)" opacity="0.45"/>
+      <g fill="var(--stone)" stroke="var(--stone-dark)" stroke-width="1.5">
+        <rect x="92" y="112" width="116" height="52" rx="2"/>
+        <rect x="76" y="96" width="26" height="70"/><rect x="198" y="96" width="26" height="70"/>
+        <rect x="126" y="70" width="48" height="96"/>
+      </g>
+      <g fill="var(--stone-dark)">
+        <path d="M76 96h26v-10h-6v6h-5v-6h-4v6h-5v-6h-6z"/><path d="M198 96h26v-10h-6v6h-5v-6h-4v6h-5v-6h-6z"/>
+        <path d="M126 70h48v-10h-7v6h-6v-6h-5v6h-6v-6h-5v6h-6v-6h-6z"/>
+      </g>
+      <g fill="var(--window)"><rect x="84" y="112" width="6" height="10"/><rect x="210" y="112" width="6" height="10"/><rect x="136" y="90" width="7" height="12"/><rect x="157" y="90" width="7" height="12"/><rect x="146" y="124" width="8" height="14"/><rect x="110" y="130" width="6" height="9"/><rect x="186" y="130" width="6" height="9"/></g>
+      <rect x="146" y="40" width="8" height="30" fill="var(--stone-dark)"/>
+      <circle class="beacon-core" cx="150" cy="38" r="9" fill="var(--beacon)"/>
+      <path d="M150 274 L142 288 L150 300 L158 288 Z" fill="var(--spark)" opacity="0.9"/>
+    </symbol>
+
+    <symbol id="airship" viewBox="0 0 56 36" overflow="visible">
+      <ellipse cx="26" cy="14" rx="24" ry="11" fill="var(--claude)"/>
+      <ellipse cx="22" cy="11" rx="12" ry="4" fill="#FFFFFF" opacity="0.25"/>
+      <rect x="18" y="25" width="16" height="8" rx="2" fill="#3A3F4A"/>
+      <path d="M22 25l2-4h4l2 4" fill="none" stroke="#3A3F4A" stroke-width="1.5"/>
+    </symbol>
+
+    <!-- Feature glyphs. -->
+    <symbol id="g-island" viewBox="0 0 34 34"><ellipse cx="17" cy="12" rx="13" ry="5" fill="var(--grass)"/><path d="M5 13q6 10 12 13q6-3 12-13z" fill="var(--rock)"/></symbol>
+    <symbol id="g-ship" viewBox="0 0 34 34"><ellipse cx="17" cy="14" rx="14" ry="7" fill="var(--claude)"/><rect x="12" y="23" width="10" height="5" rx="1" fill="#3A3F4A"/></symbol>
+    <symbol id="g-rule" viewBox="0 0 34 34" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linecap="round"><path d="M6 10h22M6 17h14M6 24h18"/><circle cx="27" cy="21" r="4" fill="var(--sky-top)"/><path d="M25 21l1.5 1.5L29 19"/></symbol>
+    <symbol id="g-beacon" viewBox="0 0 34 34"><rect x="15" y="12" width="4" height="16" fill="var(--stone-dark)"/><circle cx="17" cy="9" r="6" fill="var(--beacon)"/><circle cx="17" cy="9" r="10" fill="var(--beacon)" opacity="0.2"/></symbol>
+    <symbol id="g-stream" viewBox="0 0 34 34" fill="none" stroke="var(--spark)" stroke-width="2.2" stroke-linecap="round"><path d="M4 12h26M4 17h26M4 22h26" stroke-dasharray="4 3"/></symbol>
+    <symbol id="g-merge" viewBox="0 0 34 34" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="7" r="3"/><circle cx="10" cy="27" r="3"/><circle cx="25" cy="12" r="3"/><path d="M10 10v14M10 20q0-6 15-5"/></symbol>
+  </defs>
+</svg>
+
+<header class="hero">
+  <canvas class="stars" id="stars" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <div class="top">
+      <a class="brand" href="#"><svg viewBox="0 0 34 34" aria-hidden="true"><use href="#g-island"/></svg>Skylands</a>
+      <nav aria-label="Site"><a href="#how">How it works</a><a href="#features">Features</a><a href="#roles">One binary</a><a class="gh" href="https://github.com/skylands-ai/skylands"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a></nav>
+    </div>
+    <div class="hero-copy">
+      <h1><span>Your agents.</span><span>Your machines.</span><span>One world.</span></h1>
+      <p>Skylands runs almost any coding agent like Claude Code on the machines you already have, keeps you informed and updated, and follows your guardrails and rules.</p>
+      <div class="cta">
+        <a class="btn primary" href="#how">Run it in two commands</a>
+        <a class="btn" href="https://github.com/skylands-ai/skylands">Source on GitHub</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="scene" id="scene" aria-label="The citadel with islands around it. Each island is a feature; the one in front is described beside it.">
+    <svg class="tethers" id="tethers" aria-hidden="true"></svg>
+    <div class="citadel" aria-hidden="true"><svg viewBox="0 0 300 300"><use href="#citadel"/></svg></div>
+    <div id="ring"></div>
+    <div class="airship" id="airship" aria-hidden="true"><svg viewBox="0 0 56 36"><use href="#airship"/></svg></div>
+    <div class="caption" id="caption" aria-live="polite">
+      <div class="eyebrow swap"><span class="dot"></span><span id="cap-n">01 / 06</span><span id="cap-kicker">Islands</span></div>
+      <h2 class="swap" id="cap-title">Every machine is an island</h2>
+      <p class="swap" id="cap-text">Run the daemon on a laptop, a desktop, the cloud, or the box in the closet. Each one becomes an island circling your citadel. Agents and sessions survive island restart.</p>
+    </div>
+  </div>
+  <div class="controls" aria-label="Choose a feature">
+    <button class="arrow" id="prev" type="button" aria-label="Previous feature"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3L5 8l5 5"/></svg></button>
+    <div class="dots" id="dots" role="tablist"></div>
+    <button class="arrow" id="next" type="button" aria-label="Next feature"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></button>
+    <button class="pause" id="pause" type="button" aria-label="Pause the tour" aria-pressed="false"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="3" y="3" width="4" height="10" rx="1"/><rect x="9" y="3" width="4" height="10" rx="1"/></svg></button>
+  </div>
+</header>
+
+<main>
+  <section class="block wrap" id="how">
+    <h2>Up and ready in two commands</h2>
+    <p class="lead">Start with a world on your own machine, register a repository, and give an agent work from the app.</p>
+    <div class="steps">
+      <div class="step"><span class="n">STEP 1</span><h3>Raise a world</h3><p>One command starts everything a single machine needs and opens the world in your browser.</p><pre>skylands devworld up</pre></div>
+      <div class="step"><span class="n">STEP 2</span><h3>Register a repository</h3><p>The daemon snapshots its tracked files. A terrace rises on the island with a building for each one.</p><pre>skylands repo register ~/code/storefront</pre></div>
+      <div class="step"><span class="n">STEP 3</span><h3>Give an agent work</h3><p>Dispatch work directly or let Skylands decide where the work goes. An airship takes off and gets to work.</p><pre>Launch: add an amazing new feature to the cart
+Agent: Claude Code   Where: a worktree of its own</pre></div>
+    </div>
+  </section>
+
+  <section class="block wrap" id="features">
+    <h2>Explore your agentic world</h2>
+    <p class="lead">The world isn't just a pretty interface. Every shape is a simple representation of a concept you'd normally have to use a terminal to interact with: who's working, on what, and what's waiting on me.</p>
+    <div class="features" id="feature-grid"></div>
+  </section>
+
+  <section class="block wrap" id="roles">
+    <h2>One binary, two roles</h2>
+    <p class="lead">A daemon turns the machine it runs on into an island in your world. A citadel serves the web app for all of them.</p>
+    <div class="roles">
+      <div class="role"><span class="cmd">skylands daemon up</span><h3>The island</h3><p>Runs on each machine that hosts agents. It launches them, keeps their conversations, applies your rules, and keeps working when the network drops, catching the world up when it is back.</p></div>
+      <div class="role"><span class="cmd">skylands citadel up</span><h3>The citadel</h3><p>Serves the browser. It shows every island it can reach, carries your answers to the right machine, and holds none of your code: what you read comes from the island while you look.</p></div>
+      <div class="role"><span class="cmd">skylands devworld up</span><h3>Both, on one machine</h3><p>Runs the island and the citadel together in one process. It is the way to start, and the way to work when one machine is all you need.</p></div>
+    </div>
+  </section>
+</main>
+
+<footer class="wrap">
+  <a class="brand" href="#"><svg viewBox="0 0 34 34" aria-hidden="true"><use href="#g-island"/></svg>Skylands</a>
+  <span>skylands.ai</span>
+  <a href="https://github.com/skylands-ai/skylands">github.com/skylands-ai/skylands</a>
+  <span>Open source.</span>
+</footer>
+
+<script>
+(() => {
+  const features = [
+    { kicker: 'Islands', shape: 'isle-trees', glyph: 'g-island', title: 'Every machine is an island',
+      text: 'Run the daemon on a laptop, a desktop, the cloud, or the box in the closet. Each one becomes an island circling your citadel. Agents and sessions survive island restart.' },
+    { kicker: 'Airships', shape: 'isle-terrace', glyph: 'g-ship', title: 'Watch agents work',
+      text: 'Each agent is an airship over your repository. Watch where it goes and what it touches at a glance, without reading a log.' },
+    { kicker: 'Rules', shape: 'isle-pond', glyph: 'g-rule', title: 'Rules, not babysitting',
+      text: 'Decide once what an agent can do on its own. Set rules on a repository and every session follows them, so only get asked about the things that matter.' },
+    { kicker: 'The beacon', shape: 'isle-trees', glyph: 'g-beacon', title: 'Answer from anywhere',
+      text: 'Approvals and questions from every agent land in one inbox. Answer from the browser or the terminal, then get back to your own work.' },
+    { kicker: 'Sessions', shape: 'isle-terrace', glyph: 'g-stream', title: 'Conversations that last',
+      text: 'Work with an agent across as many turns as it takes, and pick up where you left off, even after a restart. The history stays on your machines.' },
+    { kicker: 'Merging', shape: 'isle-pond', glyph: 'g-merge', title: 'Merge when ready',
+      text: 'Agents work on their own branches, so nothing touches yours. Review, then commit, merge, or open a pull request from the conversation.' },
+  ];
+  const n = features.length;
+  const step = (Math.PI * 2) / n;
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Stars, drawn once.
+  const stars = document.getElementById('stars');
+  const drawStars = () => {
+    const r = stars.getBoundingClientRect();
+    stars.width = Math.floor(r.width * devicePixelRatio);
+    stars.height = Math.floor(r.height * devicePixelRatio);
+    const g = stars.getContext('2d');
+    g.scale(devicePixelRatio, devicePixelRatio);
+    g.clearRect(0, 0, r.width, r.height);
+    let seed = 7;
+    const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    for (let i = 0; i < 220; i++) {
+      const x = rnd() * r.width, y = rnd() * r.height * 0.8, s = rnd();
+      g.fillStyle = `rgba(231,238,244,${0.25 + s * 0.6})`;
+      g.beginPath(); g.arc(x, y, 0.5 + s * 1.1, 0, Math.PI * 2); g.fill();
+    }
+  };
+
+  // The ring of islands.
+  const scene = document.getElementById('scene');
+  const ring = document.getElementById('ring');
+  const tethers = document.getElementById('tethers');
+  const airship = document.getElementById('airship');
+  const isles = features.map((f, i) => {
+    const el = document.createElement('button');
+    el.type = 'button';
+    el.className = 'isle';
+    el.setAttribute('aria-label', `Show feature ${i + 1}: ${f.title}`);
+    el.innerHTML = `<svg viewBox="0 0 170 160"><use href="#${f.shape}"/></svg><span class="name">${f.kicker}</span>`;
+    el.addEventListener('click', () => goTo(i, true));
+    ring.appendChild(el);
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    const spark = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    spark.setAttribute('r', '2.5');
+    tethers.appendChild(path); tethers.appendChild(spark);
+    return { el, path, spark };
+  });
+
+  let index = 0;
+  let current = Math.PI / 2;          // angle of island 0 right now
+  let target = current;               // where it is heading
+  const place = (t) => {
+    const W = scene.clientWidth, H = scene.clientHeight;
+    const cx = W / 2, cy = H * 0.46;
+    const rx = Math.min(W * 0.42, 520), ry = H * 0.3;
+    const front = { x: cx, y: cy, s: 1 };
+    isles.forEach((o, i) => {
+      const a = current + i * step;
+      const d = (Math.sin(a) + 1) / 2;         // 0 at the back, 1 in front
+      const bob = reduce ? 0 : Math.sin(t / 900 + i * 1.3) * 4;
+      const x = cx + rx * Math.cos(a), y = cy + ry * Math.sin(a) + bob;
+      const s = 0.5 + 0.7 * d;
+      o.el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%) scale(${s})`;
+      o.el.style.zIndex = String(10 + Math.round(d * 80));
+      o.el.style.opacity = String(0.55 + 0.45 * d);
+      o.el.classList.toggle('front', i === index);
+      // The tether sags from the citadel's underside to the island's crystal.
+      const tx = cx, ty = cy + 60;
+      const ix = x, iy = y + 70 * s;
+      const mx = (tx + ix) / 2, my = Math.max(ty, iy) + 30 + 20 * (1 - d);
+      o.path.setAttribute('d', `M${tx} ${ty} Q${mx} ${my} ${ix} ${iy}`);
+      const k = reduce ? 0.5 : (t / 2200 + i * 0.37) % 1;
+      const px = (1 - k) * (1 - k) * tx + 2 * (1 - k) * k * mx + k * k * ix;
+      const py = (1 - k) * (1 - k) * ty + 2 * (1 - k) * k * my + k * k * iy;
+      o.spark.setAttribute('cx', px); o.spark.setAttribute('cy', py);
+      o.spark.style.opacity = String(0.3 + 0.7 * d);
+      if (i === index) { front.x = x; front.y = y; front.s = s; }
+    });
+    const hover = reduce ? 0 : Math.sin(t / 700) * 3;
+    airship.style.transform = `translate(${front.x - 28 + 30 * front.s}px, ${front.y - 95 * front.s + hover}px) scale(${0.8 + 0.3 * front.s})`;
+  };
+
+  const caption = document.getElementById('caption');
+  const capN = document.getElementById('cap-n'), capKicker = document.getElementById('cap-kicker');
+  const capTitle = document.getElementById('cap-title'), capText = document.getElementById('cap-text');
+  const dots = document.getElementById('dots');
+  const dotEls = features.map((f, i) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.setAttribute('role', 'tab'); b.setAttribute('aria-label', f.title);
+    b.innerHTML = '<span></span>';
+    b.addEventListener('click', () => goTo(i, true));
+    dots.appendChild(b);
+    return b;
+  });
+  const showCaption = () => {
+    const f = features[index];
+    capN.textContent = `${String(index + 1).padStart(2, '0')} / ${String(n).padStart(2, '0')}`;
+    capKicker.textContent = f.kicker;
+    capTitle.textContent = f.title;
+    capText.textContent = f.text;
+    dotEls.forEach((d, i) => d.setAttribute('aria-current', i === index ? 'true' : 'false'));
+  };
+  const goTo = (i, byHand) => {
+    const dir = ((i - index) % n + n) % n;            // steps forward around the ring
+    const forward = dir <= n / 2 ? dir : dir - n;    // the shorter way round
+    index = ((i % n) + n) % n;
+    target = target + forward * step;
+    if (reduce) current = target;
+    caption.classList.add('changing');
+    setTimeout(() => { showCaption(); caption.classList.remove('changing'); }, reduce ? 0 : 320);
+    if (byHand) rest();
+  };
+
+  // The tour: the next island comes to the front every few seconds, unless
+  // someone is looking closely or asked it to stop.
+  const every = 6500;
+  let timer = null, paused = false, held = false;
+  const pauseBtn = document.getElementById('pause');
+  const playIcon = '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 3l9 5-9 5z"/></svg>';
+  const pauseIcon = pauseBtn.innerHTML;
+  const start = () => { if (timer || paused || reduce) return; timer = setInterval(() => goTo(index + 1, false), every); };
+  const stop = () => { if (timer) clearInterval(timer); timer = null; };
+  const rest = () => { stop(); start(); };
+  pauseBtn.addEventListener('click', () => {
+    paused = !paused;
+    pauseBtn.setAttribute('aria-pressed', String(paused));
+    pauseBtn.setAttribute('aria-label', paused ? 'Resume the tour' : 'Pause the tour');
+    pauseBtn.innerHTML = paused ? playIcon : pauseIcon;
+    if (paused) stop(); else start();
+  });
+  document.getElementById('prev').addEventListener('click', () => goTo(index - 1, true));
+  document.getElementById('next').addEventListener('click', () => goTo(index + 1, true));
+  scene.addEventListener('pointerenter', () => { held = true; stop(); });
+  scene.addEventListener('pointerleave', () => { held = false; start(); });
+  scene.addEventListener('focusin', () => { held = true; stop(); });
+  scene.addEventListener('focusout', (e) => { if (!scene.contains(e.relatedTarget)) { held = false; start(); } });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); else if (!held) start(); });
+  if (reduce) { pauseBtn.hidden = true; }
+
+  // The feature grid below repeats the tour in reading order.
+  const grid = document.getElementById('feature-grid');
+  features.forEach((f) => {
+    const card = document.createElement('div');
+    card.className = 'feature';
+    card.innerHTML = `<svg aria-hidden="true"><use href="#${f.glyph}"/></svg><h3></h3><p></p>`;
+    card.querySelector('h3').textContent = f.title;
+    card.querySelector('p').textContent = f.text;
+    grid.appendChild(card);
+  });
+
+  const frame = (t) => {
+    if (!reduce) {
+      const diff = target - current;
+      current += Math.abs(diff) < 0.0005 ? diff : diff * 0.07;
+    }
+    place(t);
+    requestAnimationFrame(frame);
+  };
+  showCaption();
+  drawStars();
+  place(0);
+  requestAnimationFrame(frame);
+  start();
+  window.addEventListener('resize', () => { drawStars(); place(performance.now()); });
+})();
+</script>
+</body>
+</html>
